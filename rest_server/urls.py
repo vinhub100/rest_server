@@ -20,4 +20,5 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^auth/', include('rest_server.authorization.urls', namespace='auth')),
     url(r'^author/', include('rest_server.author.urls', namespace='author')),
+    url(r'^player/', include('rest_server.player.urls', namespace='player'))
 ]

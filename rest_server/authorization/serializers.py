@@ -22,7 +22,7 @@ class SignUpSerializer(ModelSerializer):
         email1 = value
         if email1 != email2:
             raise ValidationError('Both Emails must be same')
-        usr = User.objects.filter(email = email1)
+        usr = User.objects.filter(email=email1)
         if usr.exists():
             raise ValidationError('This email already exists')
         return value

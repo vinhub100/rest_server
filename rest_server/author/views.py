@@ -12,7 +12,7 @@ from rest_server.core.models import OneWordAnswerType, OneWordAnswerAnswer
 
 
 class OWQuestion(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, QuestionAuthorPermission]
 
     def get(self, request, *args, **kwargs):
         slug = kwargs.get('slug', None)
@@ -55,7 +55,7 @@ class OWQuestion(APIView):
 
 
 class SCQuestion(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, QuestionAuthorPermission]
 
     def get(self, request, *args, **kwargs):
         # slug = kwargs.get('slug', None)
@@ -102,7 +102,7 @@ class SCQuestion(APIView):
 
 
 class MCQuestion(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, QuestionAuthorPermission]
 
     def get(self, request, *args, **kwargs):
         # slug = kwargs.get('slug', None)
