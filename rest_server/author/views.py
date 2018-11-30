@@ -1,44 +1,71 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
 from rest_framework import permissions
-from rest_framework.permissions import AllowAny
+from rest_framework import pagination
+# from rest_framework.permissions import AllowAny
 from django.shortcuts import get_object_or_404, get_list_or_404
 from .permissions import QuestionAuthorPermission
 from .serializers import OWQuestionListSerializer, OWQuestionDetailSerializer, OWQuestionCreateUpdateSerializer
+from .serializers import SCQuestionListSerializer, SCQuestionDetailSerializer, SCQuestionCreateUpdateSerializer
+from .serializers import MCQuestionListSerializer, MCQuestionDetailSerializer, MCQuestionCreateUpdateSerializer
 from rest_server.core.models import OneWordAnswerType, OneWordAnswerAnswer
+from rest_server.core.models import SingleChoiceQuestion, SingleChoiceAnswer, SingleChoiceOptions
+from rest_server.core.models import MultiChoiceQuestion, MultiChoiceOptions, MultiChoiceAnswers
 
 
 class OWQuestion(APIView):
     permission_classes = [permissions.IsAuthenticated, QuestionAuthorPermission]
+    pagination_class = pagination.PageNumberPagination
+
+    @property
+    def paginator(self):
+        if not hasattr(self, '_paginator'):
+            if self.pagination_class is None:
+                self._paginator = None
+            else:
+                self._paginator = self.pagination_class()
+        return self._paginator
+
+    def paginate_queryset(self, queryset):
+        if self.paginator is None:
+            return None
+        return self.paginator.paginate_queryset(queryset, self.request, view=self)
+
+    def get_paginated_response(self, data):
+        assert self.paginator is not None
+        return self.paginator.get_paginated_response(data)
 
     def get(self, request, *args, **kwargs):
         slug = kwargs.get('slug', None)
         if not slug:
             data = get_list_or_404(OneWordAnswerType, author=request.user)
-            paginator = PageNumberPagination()
-            paged_data = paginator.paginate_queryset(data, request)
-            serializer = OWQuestionListSerializer(paged_data, many=True, context={'request': request})
+            paged_data = self.paginate_queryset(data)
+            if paged_data is not None:
+                serializer = OWQuestionListSerializer(paged_data, many=True, context={'request': request})
+                return self.get_paginated_response(serializer.data)
+            serializer = OWQuestionListSerializer(data, many=True, context={'request': request})
             return Response(serializer.data, status=status.HTTP_200_OK)
         data = get_object_or_404(OneWordAnswerType, author=request.user, q_slug=slug)
+        self.check_object_permissions(request, data)
         serializer = OWQuestionDetailSerializer(data, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         data = request.data
-        serializer = OWQuestionCreateUpdateSerializer(data=data, context={'request':request})
+        serializer = OWQuestionCreateUpdateSerializer(data=data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.data, status=status.HTTP_406_NOT_ACCEPTABLE)
 
     def put(self, request, *args, **kwargs):
         slug = kwargs.get('slug', None)
         if not slug:
-            return Response("Slug is required", status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'Slug is required'}, status=status.HTTP_400_BAD_REQUEST)
         question = get_object_or_404(OneWordAnswerType, q_slug=slug)
+        self.check_object_permissions(request, question)
         serializer = OWQuestionCreateUpdateSerializer(question, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -47,7 +74,10 @@ class OWQuestion(APIView):
 
     def delete(self, request, *args, **kwargs):
         slug = kwargs.get('slug', None)
+        if not slug:
+            return Response({'message': 'Slug is required'}, status=status.HTTP_400_BAD_REQUEST)
         question = get_object_or_404(OneWordAnswerType, q_slug=slug)
+        self.check_object_permissions(request, question)
         answer = get_object_or_404(OneWordAnswerAnswer, question=question)
         answer.delete()
         question.delete()
@@ -56,94 +86,145 @@ class OWQuestion(APIView):
 
 class SCQuestion(APIView):
     permission_classes = [permissions.IsAuthenticated, QuestionAuthorPermission]
+    pagination_class = pagination.PageNumberPagination
+
+    @property
+    def paginator(self):
+        if not hasattr(self, '_paginator'):
+            if self.pagination_class is None:
+                self._paginator = None
+            else:
+                self._paginator = self.pagination_class()
+        return self._paginator
+
+    def paginate_queryset(self, queryset):
+        if self.paginator is None:
+            return None
+        return self.paginator.paginate_queryset(queryset, self.request, view=self)
+
+    def get_paginated_response(self, data):
+        assert self.paginator is not None
+        return self.paginator.get_paginated_response(data)
 
     def get(self, request, *args, **kwargs):
-        # slug = kwargs.get('slug', None)
-        # if not slug:
-        #     data = get_list_or_404(OneWordAnswerType, author=request.user)
-        #     paginator = PageNumberPagination()
-        #     paged_data = paginator.paginate_queryset(data, request)
-        #     serializer = OWQuestionListSerializer(paged_data, many=True, context={'request': request})
-        #     return Response(serializer.data, status=status.HTTP_200_OK)
-        # data = get_object_or_404(OneWordAnswerType, author=request.user, q_slug=slug)
-        # serializer = OWQuestionDetailSerializer(data, context={'request': request})
-        # return Response(serializer.data, status=status.HTTP_200_OK)
-        pass
+        slug = kwargs.get('slug', None)
+        if not slug:
+            data = get_list_or_404(SingleChoiceQuestion, author=request.user)
+            paged_data = self.paginate_queryset(data)
+            if paged_data is not None:
+                serializer = SCQuestionListSerializer(paged_data, many=True, context={'request': request})
+                return self.get_paginated_response(serializer.data)
+            serializer = SCQuestionListSerializer(data, many=True, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        data = get_object_or_404(SingleChoiceQuestion, author=request.user, q_slug=slug)
+        self.check_object_permissions(request, data)
+        serializer = SCQuestionDetailSerializer(data, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
-        # data = request.data
-        # serializer = OWQuestionCreateUpdateSerializer(data=data, context={'request':request})
-        # if serializer.is_valid():
-        #     serializer.save()
-        #     return Response(serializer.data, status=status.HTTP_201_CREATED)
-        # return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
-        pass
+        data = request.data
+        serializer = SCQuestionCreateUpdateSerializer(data=data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status.HTTP_406_NOT_ACCEPTABLE)
 
     def put(self, request, *args, **kwargs):
-        # slug = kwargs.get('slug', None)
-        # if not slug:
-        #     return Response("Slug is required", status=status.HTTP_400_BAD_REQUEST)
-        # question = get_object_or_404(OneWordAnswerType, q_slug=slug)
-        # serializer = OWQuestionCreateUpdateSerializer(question, data=request.data)
-        # if serializer.is_valid():
-        #     serializer.save()
-        #     return Response(status=status.HTTP_202_ACCEPTED)
-        # return Response(serializer.data, status=status.HTTP_406_NOT_ACCEPTABLE)
-        pass
+        slug = kwargs.get('slug', None)
+        if not slug:
+            return Response({'message': 'Slug is required'}, status=status.HTTP_400_BAD_REQUEST)
+        question = get_object_or_404(SingleChoiceQuestion, q_slug=slug)
+        self.check_object_permissions(request, question)
+        serializer = SCQuestionCreateUpdateSerializer(question, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(status=status.HTTP_202_ACCEPTED)
+        return Response(serializer.data, status=status.HTTP_406_NOT_ACCEPTABLE)
 
     def delete(self, request, *args, **kwargs):
-        # slug = kwargs.get('slug', None)
-        # question = get_object_or_404(OneWordAnswerType, q_slug=slug)
-        # answer = get_object_or_404(OneWordAnswerAnswer, question=question)
-        # answer.delete()
-        # question.delete()
-        # return Response('Question Deleted', status=status.HTTP_200_OK)
-        pass
+        slug = kwargs.get('slug', None)
+        if not slug:
+            return Response({'message': 'Slug is required'}, status=status.HTTP_400_BAD_REQUEST)
+        question = get_object_or_404(SingleChoiceQuestion, q_slug=slug)
+        self.check_object_permissions(request, question)
+        answer = get_object_or_404(SingleChoiceAnswer, question=question)
+        options = get_list_or_404(SingleChoiceOptions, question=question)
+        answer.delete()
+        for option in options:
+            option.delete()
+        question.delete()
+        return Response(data={'status': 'Deleted'}, status=status.HTTP_200_OK)
 
 
 class MCQuestion(APIView):
     permission_classes = [permissions.IsAuthenticated, QuestionAuthorPermission]
+    pagination_class = pagination.PageNumberPagination
+
+    @property
+    def paginator(self):
+        if not hasattr(self, '_paginator'):
+            if self.pagination_class is None:
+                self._paginator = None
+            else:
+                self._paginator = self.pagination_class()
+        return self._paginator
+
+    def paginate_queryset(self, queryset):
+        if self.paginator is None:
+            return None
+        return self.paginator.paginate_queryset(queryset, self.request, view=self)
+
+    def get_paginated_response(self, data):
+        assert self.paginator is not None
+        return self.paginator.get_paginated_response(data)
 
     def get(self, request, *args, **kwargs):
-        # slug = kwargs.get('slug', None)
-        # if not slug:
-        #     data = get_list_or_404(OneWordAnswerType, author=request.user)
-        #     paginator = PageNumberPagination()
-        #     paged_data = paginator.paginate_queryset(data, request)
-        #     serializer = OWQuestionListSerializer(paged_data, many=True, context={'request': request})
-        #     return Response(serializer.data, status=status.HTTP_200_OK)
-        # data = get_object_or_404(OneWordAnswerType, author=request.user, q_slug=slug)
-        # serializer = OWQuestionDetailSerializer(data, context={'request': request})
-        # return Response(serializer.data, status=status.HTTP_200_OK)
-        pass
+        slug = kwargs.get('slug', None)
+        if not slug:
+            data = get_list_or_404(MultiChoiceQuestion, author=request.user)
+            paged_data = self.paginate_queryset(data)
+            if paged_data is not None:
+                serializer = MCQuestionListSerializer(paged_data, many=True, context={'request': request})
+                return self.get_paginated_response(serializer.data)
+            serializer = MCQuestionListSerializer(data, many=True, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        data = get_object_or_404(MultiChoiceQuestion, author=request.user, q_slug=slug)
+        self.check_object_permissions(request, data)
+        serializer = MCQuestionDetailSerializer(data, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
-        # data = request.data
-        # serializer = OWQuestionCreateUpdateSerializer(data=data, context={'request':request})
-        # if serializer.is_valid():
-        #     serializer.save()
-        #     return Response(serializer.data, status=status.HTTP_201_CREATED)
-        # return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
-        pass
+        data = request.data
+        serializer = MCQuestionCreateUpdateSerializer(data=data, context={'request':request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status.HTTP_406_NOT_ACCEPTABLE)
 
     def put(self, request, *args, **kwargs):
-        # slug = kwargs.get('slug', None)
-        # if not slug:
-        #     return Response("Slug is required", status=status.HTTP_400_BAD_REQUEST)
-        # question = get_object_or_404(OneWordAnswerType, q_slug=slug)
-        # serializer = OWQuestionCreateUpdateSerializer(question, data=request.data)
-        # if serializer.is_valid():
-        #     serializer.save()
-        #     return Response(status=status.HTTP_202_ACCEPTED)
-        # return Response(serializer.data, status=status.HTTP_406_NOT_ACCEPTABLE)
-        pass
+        slug = kwargs.get('slug', None)
+        if not slug:
+            return Response({'message': 'Slug is required'}, status=status.HTTP_400_BAD_REQUEST)
+        question = get_object_or_404(MultiChoiceQuestion, q_slug=slug)
+        self.check_object_permissions(request, question)
+        serializer = MCQuestionCreateUpdateSerializer(question, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(status=status.HTTP_202_ACCEPTED)
+        return Response(serializer.data, status=status.HTTP_406_NOT_ACCEPTABLE)
 
     def delete(self, request, *args, **kwargs):
-        # slug = kwargs.get('slug', None)
-        # question = get_object_or_404(OneWordAnswerType, q_slug=slug)
-        # answer = get_object_or_404(OneWordAnswerAnswer, question=question)
-        # answer.delete()
-        # question.delete()
-        # return Response('Question Deleted', status=status.HTTP_200_OK)
-        pass
+        slug = kwargs.get('slug', None)
+        if not slug:
+            return Response({'message': 'Slug is required'}, status=status.HTTP_400_BAD_REQUEST)
+        question = get_object_or_404(MultiChoiceQuestion, q_slug=slug)
+        self.check_object_permissions(request, question)
+        answers = get_list_or_404(MultiChoiceAnswers, question=question)
+        options = get_list_or_404(MultiChoiceOptions, question=question)
+        for answer in answers:
+            answer.delete()
+        for option in options:
+            option.delete()
+        question.delete()
+        return Response(data={'status': 'Deleted'}, status=status.HTTP_200_OK)
 
