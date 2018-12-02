@@ -123,7 +123,10 @@ class SCQuestion(APIView):
 
     def post(self, request, *args, **kwargs):
         data = request.data
-        serializer = SCQuestionCreateUpdateSerializer(data=data, context={'request': request})
+        p_data = {'question': data.get('question'),
+                  'options': [{'option': option} for option in data.getlist('options')],
+                  'answer': data.get('answer')}
+        serializer = SCQuestionCreateUpdateSerializer(data=p_data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -135,7 +138,10 @@ class SCQuestion(APIView):
             return Response({'message': 'Slug is required'}, status=status.HTTP_400_BAD_REQUEST)
         question = get_object_or_404(SingleChoiceQuestion, q_slug=slug)
         self.check_object_permissions(request, question)
-        serializer = SCQuestionCreateUpdateSerializer(question, data=request.data)
+        data = request.data
+        p_data = {'options': [{'option': option} for option in data.getlist('options')],
+                  'answer': data.get('answer')}
+        serializer = SCQuestionCreateUpdateSerializer(question, data=p_data)
         if serializer.is_valid():
             serializer.save()
             return Response(status=status.HTTP_202_ACCEPTED)
@@ -195,7 +201,10 @@ class MCQuestion(APIView):
 
     def post(self, request, *args, **kwargs):
         data = request.data
-        serializer = MCQuestionCreateUpdateSerializer(data=data, context={'request':request})
+        p_data = {'question': data.get('question'),
+                  'options': [{'option': option} for option in data.getlist('options')],
+                  'answers': [{'answer': answer}for answer in data.getlist('answers')]}
+        serializer = MCQuestionCreateUpdateSerializer(data=p_data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -207,7 +216,10 @@ class MCQuestion(APIView):
             return Response({'message': 'Slug is required'}, status=status.HTTP_400_BAD_REQUEST)
         question = get_object_or_404(MultiChoiceQuestion, q_slug=slug)
         self.check_object_permissions(request, question)
-        serializer = MCQuestionCreateUpdateSerializer(question, data=request.data)
+        data = request.data
+        p_data = {'options': [{'option': option} for option in data.getlist('options')],
+                  'answers': [{'answer': answer}for answer in data.getlist('answers')]}
+        serializer = MCQuestionCreateUpdateSerializer(question, data=p_data)
         if serializer.is_valid():
             serializer.save()
             return Response(status=status.HTTP_202_ACCEPTED)

@@ -1,4 +1,5 @@
 from rest_framework.serializers import ModelSerializer, EmailField, ValidationError, CharField, ChoiceField
+from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import UserProfile
 
@@ -15,6 +16,12 @@ class SignUpSerializer(ModelSerializer):
         model = User
         fields = ['username', 'email', 'email2', 'password', 'role']
         extra_kwargs = {"password": {"write_only": True}}
+
+    def validate_username(self, value):
+        qs = User.objects.filter(username__iexact=value)
+        if qs.exists():
+            raise serializers.ValidationError("User with this username already exists")
+        return value
 
     def validate_email(self, value):
         data = self.get_initial()

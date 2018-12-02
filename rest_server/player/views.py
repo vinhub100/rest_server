@@ -56,11 +56,11 @@ class Quiz(APIView):
         qes_slug = request.data.get('slug')
         try:
             question = OneWordAnswerType.objects.get(q_slug=qes_slug)
-        except ObjectDoesNotExist or Exception:
+        except (ObjectDoesNotExist, Exception):
             return Response(data={'error': 'Please send proper slug'}, status=status.HTTP_204_NO_CONTENT)
         try:
             answer = OneWordAnswerAnswer.objects.get(question=question)
-        except ObjectDoesNotExist or Exception:
+        except (ObjectDoesNotExist, Exception):
             return Response(data={'error': 'Unable to find answer'}, status=status.HTTP_204_NO_CONTENT)
         submitted_ans = request.data.get('answer')
         ans = str(answer.answers)
@@ -81,11 +81,11 @@ class Quiz(APIView):
         slug = request.data.get('slug')
         try:
             question = SingleChoiceQuestion.objects.get(q_slug=slug)
-        except ObjectDoesNotExist or Exception:
+        except (ObjectDoesNotExist, Exception):
             return Response(data={'error': 'Please send proper slug'}, status=status.HTTP_204_NO_CONTENT)
         try:
             answer = SingleChoiceAnswer.objects.get(question=question)
-        except ObjectDoesNotExist or Exception:
+        except (ObjectDoesNotExist, Exception):
             return Response(data={'error': 'Unable to find answer'}, status=status.HTTP_204_NO_CONTENT)
         submitted_ans = request.data.get('answer')
         ans = str(answer.answer)
@@ -106,12 +106,12 @@ class Quiz(APIView):
         slug = request.data.get('slug')
         try:
             question = MultiChoiceQuestion.objects.get(q_slug=slug)
-        except ObjectDoesNotExist or Exception:
+        except (ObjectDoesNotExist, Exception):
             return Response(data={'error': 'Please send proper slug'}, status=status.HTTP_204_NO_CONTENT)
         try:
             answers = MultiChoiceAnswers.objects.filter(question=question)
             options = MultiChoiceOptions.objects.filter(question=question)
-        except ObjectDoesNotExist or Exception:
+        except (ObjectDoesNotExist, Exception):
             return Response(data={'error': 'Unable to find answer or options'}, status=status.HTTP_204_NO_CONTENT)
         submitted_ans = request.data.getlist('answers')
         ans = [str(answer.answers.option) for answer in answers ]
