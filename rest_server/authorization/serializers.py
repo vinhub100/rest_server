@@ -2,6 +2,7 @@ from rest_framework.serializers import ModelSerializer, EmailField, ValidationEr
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import UserProfile
+from rest_server.player.models import PlayerScore
 
 
 Roles = ["Player", "Author"]
@@ -50,6 +51,9 @@ class SignUpSerializer(ModelSerializer):
         usr.save(force_insert=True)
         user_prof = UserProfile(user=usr, role=validated_data.get('role'))
         user_prof.save()
+        if validated_data.get('role') == 'Player':
+            ps = PlayerScore(user=usr)
+            ps.save(force_insert=True)
         return validated_data
 
 

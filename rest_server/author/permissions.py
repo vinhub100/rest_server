@@ -9,7 +9,7 @@ class QuestionAuthorPermission(BasePermission):
             profile = UserProfile.objects.get(user=request.user)
         except ObjectDoesNotExist:
             return False
-        if profile.role == "Player":
+        if profile.role == "Author":
             return True
         return False
 

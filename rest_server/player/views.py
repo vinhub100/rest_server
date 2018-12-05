@@ -71,7 +71,7 @@ class Quiz(APIView):
             answer_state = 'Right'
         else:
             answer_state = 'Wrong'
-        data = {'question': question,
+        data = {'question': question.question,
                 'submitted_answer': submitted_ans,
                 'right_answer': ans,
                 'result': answer_state}
@@ -96,7 +96,7 @@ class Quiz(APIView):
             answer_state = 'Right'
         else:
             answer_state = 'Wrong'
-        data = {'question': question,
+        data = {'question': question.question,
                 'submitted_answer': submitted_ans,
                 'right_answer': ans,
                 'result': answer_state}
@@ -145,7 +145,7 @@ class Quiz(APIView):
             answer_state = 'Right'
         else:
             answer_state = 'Wrong'
-        data = {'question': question,
+        data = {'question': question.question,
                 'result': answer_state,
                 'submitted_answer': submitted_ans,
                 'right_answer': ans}

@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-
+    'corsheaders',
     'rest_server.core',
     'rest_server.authorization',
     'rest_server.player',
@@ -49,6 +49,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -146,7 +147,7 @@ REST_FRAMEWORK = {
         #'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 15
+    "PAGE_SIZE": 10
 }
 
 
@@ -161,4 +162,23 @@ JWT_AUTH = {
     # it can be refreshed.  exprired tokens can't be refreshed.
     'JWT_REFRESH_EXPIRATION_DELTA': datetime.timedelta(days=7),
 }
+
+
+CORS_ORIGIN_WHITELIST = (
+    '127.0.0.1:4200',
+    '0.0.0.0:4200',
+    'localhost:4200',
+
+)
+
+
+CORS_ALLOW_METHODS = (
+   'DELETE',
+   'GET',
+   'OPTIONS',
+   'PATCH',
+   'POST',
+   'PUT',
+)
+
 

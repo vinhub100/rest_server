@@ -64,12 +64,13 @@ class OWQuestion(APIView):
         slug = kwargs.get('slug', None)
         if not slug:
             return Response({'message': 'Slug is required'}, status=status.HTTP_400_BAD_REQUEST)
-        question = get_object_or_404(OneWordAnswerType, q_slug=slug)
-        self.check_object_permissions(request, question)
-        serializer = OWQuestionCreateUpdateSerializer(question, data=request.data)
+        que = get_object_or_404(OneWordAnswerType, q_slug=slug)
+        self.check_object_permissions(request, que)
+        serializer = OWQuestionCreateUpdateSerializer(que, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(status=status.HTTP_202_ACCEPTED)
+        print(serializer.errors)
         return Response(serializer.data, status=status.HTTP_406_NOT_ACCEPTABLE)
 
     def delete(self, request, *args, **kwargs):
@@ -107,6 +108,7 @@ class SCQuestion(APIView):
         return self.paginator.get_paginated_response(data)
 
     def get(self, request, *args, **kwargs):
+        print('HOST', request.get_host())
         slug = kwargs.get('slug', None)
         if not slug:
             data = get_list_or_404(SingleChoiceQuestion, author=request.user)
@@ -123,14 +125,20 @@ class SCQuestion(APIView):
 
     def post(self, request, *args, **kwargs):
         data = request.data
+        print('View 1', data.get('question'), data.getlist('options'), data.get('answer'))
         p_data = {'question': data.get('question'),
-                  'options': [{'option': option} for option in data.getlist('options')],
+                  'options': {option: option for option in data.getlist('options')},
                   'answer': data.get('answer')}
+        print('View 2', p_data)
         serializer = SCQuestionCreateUpdateSerializer(data=p_data, context={'request': request})
+        print('View 3', serializer.is_valid())
         if serializer.is_valid():
+            print('View 4')
             serializer.save()
+            print('View 5')
+            print(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.data, status=status.HTTP_406_NOT_ACCEPTABLE)
+        return Response(serializer.errors, status=status.HTTP_406_NOT_ACCEPTABLE)
 
     def put(self, request, *args, **kwargs):
         slug = kwargs.get('slug', None)
@@ -139,13 +147,13 @@ class SCQuestion(APIView):
         question = get_object_or_404(SingleChoiceQuestion, q_slug=slug)
         self.check_object_permissions(request, question)
         data = request.data
-        p_data = {'options': [{'option': option} for option in data.getlist('options')],
+        p_data = {'options': {option: option for option in data.getlist('options')},
                   'answer': data.get('answer')}
-        serializer = SCQuestionCreateUpdateSerializer(question, data=p_data)
+        serializer = SCQuestionCreateUpdateSerializer(question, data=p_data,  partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response(status=status.HTTP_202_ACCEPTED)
-        return Response(serializer.data, status=status.HTTP_406_NOT_ACCEPTABLE)
+            return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+        return Response(serializer.errors, status=status.HTTP_406_NOT_ACCEPTABLE)
 
     def delete(self, request, *args, **kwargs):
         slug = kwargs.get('slug', None)
@@ -201,14 +209,20 @@ class MCQuestion(APIView):
 
     def post(self, request, *args, **kwargs):
         data = request.data
+        print('View 1', data.get('question'), data.getlist('options'), data.get('answer'))
         p_data = {'question': data.get('question'),
-                  'options': [{'option': option} for option in data.getlist('options')],
-                  'answers': [{'answer': answer}for answer in data.getlist('answers')]}
+                  'options': {option: option for option in data.getlist('options')},
+                  'answers': {answer: answer for answer in data.getlist('answers')}}
+        print('View 2', p_data)
         serializer = MCQuestionCreateUpdateSerializer(data=p_data, context={'request': request})
+        print('View 3', serializer.is_valid())
         if serializer.is_valid():
+            print('View 4')
             serializer.save()
+            print('View 5')
+            print(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.data, status=status.HTTP_406_NOT_ACCEPTABLE)
+        return Response(serializer.errors, status=status.HTTP_406_NOT_ACCEPTABLE)
 
     def put(self, request, *args, **kwargs):
         slug = kwargs.get('slug', None)
@@ -217,13 +231,14 @@ class MCQuestion(APIView):
         question = get_object_or_404(MultiChoiceQuestion, q_slug=slug)
         self.check_object_permissions(request, question)
         data = request.data
-        p_data = {'options': [{'option': option} for option in data.getlist('options')],
-                  'answers': [{'answer': answer}for answer in data.getlist('answers')]}
-        serializer = MCQuestionCreateUpdateSerializer(question, data=p_data)
+        p_data = {'options': {option: option for option in data.getlist('options')},
+                  'answers': {answer: answer for answer in data.getlist('answers')}}
+        serializer = MCQuestionCreateUpdateSerializer(question, data=p_data, partial=True)
+        print(serializer.is_valid())
         if serializer.is_valid():
             serializer.save()
-            return Response(status=status.HTTP_202_ACCEPTED)
-        return Response(serializer.data, status=status.HTTP_406_NOT_ACCEPTABLE)
+            return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+        return Response(serializer.errors, status=status.HTTP_406_NOT_ACCEPTABLE)
 
     def delete(self, request, *args, **kwargs):
         slug = kwargs.get('slug', None)

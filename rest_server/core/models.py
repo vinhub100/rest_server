@@ -17,7 +17,7 @@ class QuestionManager(models.Manager):
 class SingleChoiceQuestion(models.Model):
     author = models.ForeignKey(User)
     question = models.CharField(max_length=255)
-    q_slug = AutoSlugField(populate_from='question')
+    q_slug = AutoSlugField(populate_from='question', unique=True)
 
     objects = QuestionManager()
 
